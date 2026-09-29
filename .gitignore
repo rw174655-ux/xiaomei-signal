@@ -1,0 +1,19 @@
+# Build outputs
+*.app/
+build/
+.build/
+XiaomeiSignal
+*.o
+*.dSYM/
+
+# Runtime files (created at run time, never commit)
+status.json
+user-ack.json
+current-task.md
+*.log
+watch.out
+watch.err
+local.xiaomei.signal.watch.plist
+
+# macOS
+.DS_Store
