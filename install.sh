@@ -1,11 +1,11 @@
 #!/bin/bash
-# Build 小梅信号灯 and install the Grok Bot watcher LaunchAgent (current user only).
+# Build Grok Bot 状态灯 and install the Grok Bot watcher LaunchAgent (current user only).
 # macOS only — for Linux/Windows see install-linux.sh / install-windows.ps1.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 SUPPORT_DIR="$HOME/Library/Application Support/XiaomeiSignal"
-APP="$HOME/Applications/小梅信号灯.app"
+APP="$HOME/Applications/Grok Bot 状态灯.app"
 LABEL="local.xiaomei.signal.watch"
 AGENT_DIR="$HOME/Library/LaunchAgents"
 PLIST="$AGENT_DIR/$LABEL.plist"

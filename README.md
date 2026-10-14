@@ -1,7 +1,7 @@
-# 小梅信号灯 · XiaomeiSignal
+# Grok Bot 状态灯 · Grok Bot Status Light
 
 <p align="center">
-  <img src="docs/preview.gif" alt="小梅信号灯动图：绿黄红切换" width="280">
+  <img src="docs/preview.gif" alt="Grok Bot 状态灯动图：绿黄红切换" width="280">
 </p>
 
 **中文** | [English](#english)
@@ -60,7 +60,7 @@ cd xiaomei-signal
 bash install.sh
 ```
 
-`install.sh` 会编译 `XiaomeiSignal.swift` → `~/Applications/小梅信号灯.app`，安装脚本与 LaunchAgent。只影响当前用户，不需要 sudo。
+`install.sh` 会编译 `XiaomeiSignal.swift` → `~/Applications/Grok Bot 状态灯.app`，安装脚本与 LaunchAgent。只影响当前用户，不需要 sudo。
 
 ### 切换状态
 
