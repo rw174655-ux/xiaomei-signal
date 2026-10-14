@@ -4,38 +4,53 @@
 
 **中文** | [English](#english)
 
-为 Grok Bot 桌面 App 做的像素风 macOS 桌面信号灯。**灯下的影子会随一天中的时间变换方向**——像阳光在移动：早上影子朝左拉长，中午缩到脚下，下午转向右边，夜里只剩淡淡一小块；灯罩上的高光和机身亮/暗边也跟着“太阳”一起换边。
+为 Grok Bot 做的跨平台状态信号：`green` / `yellow` / `red`。macOS 有像素风桌面灯 + 菜单栏图标；**Linux / Windows 提供同一套 `status.json` + `set-status` CLI**，以及终端监视与可选系统托盘。
 
-AI 助手干活时用一条命令把灯切到 绿 / 黄 / 红，你瞄一眼桌面就知道它是在推进、在等你，还是卡住了。
+AI 助手干活时用一条命令把灯切到 绿 / 黄 / 红，你瞄一眼就知道它是在推进、在等你，还是卡住了。
 
 > **给 Grok Bot 读的安装说明（可直接把链接丢给助手）：** [FOR-GROK-BOT.md](./FOR-GROK-BOT.md)
 
-## 功能（以代码实际行为为准）
+## 状态协议（三平台共用）
+
+写入同一语义的 `status.json`：
+
+| 字段 | 说明 |
+|------|------|
+| `state` | `green` / `yellow` / `red`（也接受 `g` / `y` / `wait` / `r` / `block`） |
+| `label` | 中文标签：推进中 / 等你 / 卡住 |
+| `detail` | 说明文字；若带 agent 名则形如 `【agent】内容` |
+| `updatedAt` | 本机本地时间字符串 |
+
+**状态目录（可用环境变量 `XIAOMEI_SIGNAL_DIR` 覆盖）：**
+
+| 平台 | 默认路径 |
+|------|----------|
+| macOS | `~/Library/Application Support/XiaomeiSignal/` |
+| Linux | `~/.local/share/XiaomeiSignal/`（或 `$XDG_DATA_HOME/XiaomeiSignal`） |
+| Windows | `%LOCALAPPDATA%\XiaomeiSignal\` |
+
+---
+
+## macOS（像素桌面灯）
+
+### 功能（以代码实际行为为准）
 
 - **悬浮像素灯**：无边框、透明背景，置顶显示（status bar 层级），在所有桌面空间可见，可直接拖动位置；不占 Dock（`LSUIElement`）。
 - **菜单栏小图标**：菜单栏里同时有一个迷你红黄绿灯，显示同样的状态。
 - **三种状态**：`green` 推进中 / `yellow` 等你 / `red` 卡住。当前亮着的灯每约 4.8 秒短暂闪灭一次（约 0.28 秒）。
 - **状态文字与来源 agent**：鼠标悬停在灯或菜单栏图标上，提示框显示 状态标签、内容（带 `【agent 名】` 前缀）和更新时间。文字不直接画在灯上。
-- **影子随时间变化**：按本机本地时间计算地面投影的方向、长度和深浅：
-  - 20:00–05:30 夜间：短而淡的影子
-  - 05:30–07:00 清晨：影子朝左、较长
-  - 07:00–11:00 上午：影子从左侧逐渐移向脚下
-  - 11:00–13:00 正午：短影子基本在正下方
-  - 13:00–17:00 下午：影子逐渐转向右侧并变长
-  - 17:00–20:00 傍晚：影子在右侧，逐渐变淡
-
-  亮灯上的白色高光位于“光源”一侧（与影子相反），机身左右边缘的亮/暗面也随之互换。
-- **单击灯**（轻点，不是拖动）：把 Grok Bot 切到前台（`open -a "Grok Bot"`），弹一条系统通知，并更新 `current-task.md`、`user-ack.json`。
-- **右键灯**：弹出菜单——回到当前任务、显示/隐藏、复制状态、我已知晓、需支援、退出。“我已知晓”“需支援”会写入 `user-ack.json`（留给 agent 读取，App 本身不读它）。
+- **影子随时间变化**：按本机本地时间计算地面投影的方向、长度和深浅（早/午/晚/夜）。
+- **单击灯**（轻点，不是拖动）：把 Grok Bot 切到前台，弹通知，并更新 `current-task.md`、`user-ack.json`。
+- **右键灯**：回到当前任务、显示/隐藏、复制状态、我已知晓、需支援、退出。
 - 读不到 `status.json` 时显示红灯“读不到状态”。App 每秒读取一次状态文件。
 
-## 环境要求
+### 环境要求
 
 - macOS（在 macOS 26 / Apple Silicon 上使用过）
-- Xcode Command Line Tools（提供 `swiftc` 和 `python3`）：`xcode-select --install`
-- Grok Bot 桌面 App 安装在 `/Applications/Grok Bot.app`（监视脚本按这个路径识别主进程）
+- Xcode Command Line Tools（`swiftc`、`python3`）：`xcode-select --install`
+- Grok Bot 桌面 App 在 `/Applications/Grok Bot.app`（监视脚本按此路径识别主进程）
 
-## 安装
+### 安装
 
 ```bash
 git clone https://github.com/rw174655-ux/xiaomei-signal.git
@@ -43,49 +58,146 @@ cd xiaomei-signal
 bash install.sh
 ```
 
-`install.sh` 会：
+`install.sh` 会编译 `XiaomeiSignal.swift` → `~/Applications/小梅信号灯.app`，安装脚本与 LaunchAgent。只影响当前用户，不需要 sudo。
 
-1. 用 `swiftc` 编译 `XiaomeiSignal.swift`，生成 `~/Applications/小梅信号灯.app`
-2. 把 `set-status`、`set-status.py`、`watch-grok-bot.sh` 复制到 `~/Library/Application Support/XiaomeiSignal/`
-3. 用模板 `local.xiaomei.signal.watch.plist.template` 生成 `~/Library/LaunchAgents/local.xiaomei.signal.watch.plist`（把占位符替换成你自己的路径）并加载
-
-只影响当前用户，不需要 sudo。
-
-## 使用：切换状态
+### 切换状态
 
 ```bash
 bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" <green|yellow|red> "<内容>" "<agent 名>"
 ```
 
-例子：
+### 卸载
 
 ```bash
-bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" green  "正在写 README" "小梅"
-bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" yellow "等你确认发布"  "小梅"
-bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" red    "编译失败"      "小梅"
+bash uninstall.sh          # 保留状态文件夹
+bash uninstall.sh --purge  # 连状态目录一起删
 ```
 
-- 也接受简写：`g` / `y` / `wait` / `r` / `block`
-- 第三个参数（agent 名）可省略；填了会以 `【agent 名】内容` 的形式显示
-- 状态写入 `~/Library/Application Support/XiaomeiSignal/status.json`，灯在 1 秒内刷新
+---
 
-可以把这条命令写进 Grok Bot 的指令/记忆里，让 agent 在开始、等待你、卡住时自动调用。
+## Linux（CLI + 可选托盘）
 
-## Grok Bot 监视器如何工作
+### 环境要求
 
-LaunchAgent `local.xiaomei.signal.watch`（`RunAtLoad` + `KeepAlive`）在登录后常驻运行 `watch-grok-bot.sh`，每 5 秒检查一次：
+- Python 3.8+
+- （可选托盘）`pip install --user pystray pillow`，以及系统托盘 / AppIndicator 支持
 
-- Grok Bot **主进程**在运行（`/Applications/Grok Bot.app/Contents/MacOS/Grok Bot`，或进程名正好是 `Grok Bot`），而信号灯没开 → 打开信号灯
-- Grok Bot 主进程不在了，而信号灯还开着 → 结束信号灯（`pkill`）
-
-所以 Grok Bot 退出后，灯最多约 5 秒内消失。只看主进程，不看 Helper 进程（Helper 退出较慢，会让灯一直亮着）。注意：Grok Bot 运行期间如果从菜单“退出”信号灯，监视器会在 5 秒内把它重新打开；想暂时收起请用“显示/隐藏”。日志写在 `~/Library/Application Support/XiaomeiSignal/watch.log`。
-
-## 卸载
+### 安装
 
 ```bash
-bash uninstall.sh          # 停止监视器、删除 LaunchAgent 和 App，保留状态文件夹
-bash uninstall.sh --purge  # 同时删除 ~/Library/Application Support/XiaomeiSignal
+git clone https://github.com/rw174655-ux/xiaomei-signal.git
+cd xiaomei-signal
+bash install-linux.sh
 ```
+
+会把脚本装到 `~/.local/share/XiaomeiSignal/`，并在 `~/.local/bin/` 建符号链接：`xiaomei-set-status`、`xiaomei-show-status`、`xiaomei-tray`。
+
+### 使用
+
+```bash
+# 切换状态（PATH 已含 ~/.local/bin 时）
+xiaomei-set-status green  "正在改代码" "开发"
+xiaomei-set-status yellow "等你确认"   "开发"
+xiaomei-set-status red    "测试失败"   "开发"
+
+# 或直接
+bash "$HOME/.local/share/XiaomeiSignal/set-status" yellow "等你" "小梅"
+python3 "$HOME/.local/share/XiaomeiSignal/set-status.py" green "推进中" "小梅"
+
+# 终端监视（状态变化时打印一行）
+xiaomei-show-status -w
+
+# 可选：系统托盘
+python3 -m pip install --user pystray pillow
+xiaomei-tray
+```
+
+### 怎么测
+
+```bash
+bash install-linux.sh
+xiaomei-set-status yellow "安装完成，等你看一眼" "小梅"
+xiaomei-show-status          # 应看到 yellow
+cat ~/.local/share/XiaomeiSignal/status.json
+xiaomei-set-status green "推进中" "小梅"
+```
+
+### 卸载
+
+```bash
+bash uninstall-linux.sh          # 保留 status.json
+bash uninstall-linux.sh --purge  # 删除整个数据目录
+```
+
+---
+
+## Windows（CLI + 可选托盘）
+
+### 环境要求
+
+- Python 3.8+（安装时勾选 Add to PATH）
+- （可选托盘）`python -m pip install --user pystray pillow`
+
+### 安装
+
+在 PowerShell：
+
+```powershell
+git clone https://github.com/rw174655-ux/xiaomei-signal.git
+cd xiaomei-signal
+powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+```
+
+脚本复制到 `%LOCALAPPDATA%\XiaomeiSignal\`。
+
+### 使用
+
+```powershell
+$dir = "$env:LOCALAPPDATA\XiaomeiSignal"
+& "$dir\set-status.cmd" yellow "等你确认" "小梅"
+python "$dir\set-status.py" green "推进中" "小梅"
+python "$dir\show-status.py" -w
+
+# 可选托盘
+python -m pip install --user pystray pillow
+python "$dir\tray.py"
+```
+
+### 怎么测
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+$dir = "$env:LOCALAPPDATA\XiaomeiSignal"
+& "$dir\set-status.cmd" yellow "安装完成" "小梅"
+python "$dir\show-status.py"
+Get-Content "$dir\status.json"
+& "$dir\set-status.cmd" green "推进中" "小梅"
+```
+
+> 本仓库的 CI / 云端 Linux 环境无法打开真实 Windows GUI；Windows 托盘需在本机验证。CLI（`set-status.py` / `show-status.py`）与 macOS/Linux 共用同一 Python 逻辑，语义一致。
+
+### 卸载
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\uninstall-windows.ps1
+# 或彻底删除：
+powershell -ExecutionPolicy Bypass -File .\uninstall-windows.ps1 --purge
+```
+
+---
+
+## 仓库里直接跑（不安装）
+
+三平台都可以在 clone 目录下：
+
+```bash
+python3 set-status.py green "试一下" "小梅"
+python3 show-status.py -w
+```
+
+Windows 把 `python3` 换成 `python` 即可。
+
+---
 
 ## 作者与许可
 
@@ -97,85 +209,39 @@ bash uninstall.sh --purge  # 同时删除 ~/Library/Application Support/XiaomeiS
 
 ## English
 
-A pixel-art macOS desktop status light for the Grok Bot desktop app. **The lamp's ground shadow moves with the time of day**, like sunlight: long and to the left in the morning, short and underneath at noon, swinging to the right in the afternoon, faint and short at night. The specular highlight on the lit lamp and the light/dark edges of the housing switch sides along with the "sun".
+Cross-platform status signal for Grok Bot: `green` / `yellow` / `red`. **macOS** ships a pixel desktop lamp + menu bar icon; **Linux / Windows** share the same `status.json` + `set-status` CLI, plus a terminal watcher and an optional system tray.
 
-Your AI agent flips the light to green / yellow / red with a single command, so a glance at the desktop tells you whether it's working, waiting for you, or stuck.
+### Shared protocol
 
-### Features (as the code actually behaves)
+Status file fields: `state`, `label`, `detail`, `updatedAt`. Directories:
 
-- **Floating pixel lamp**: borderless, transparent, always on top (status-bar level), visible on all Spaces, draggable; no Dock icon (`LSUIElement`).
-- **Menu bar icon**: a mini traffic light in the menu bar mirrors the same state.
-- **Three states**: `green` 推进中 (in progress) / `yellow` 等你 (waiting for you) / `red` 卡住 (blocked). The lit lamp blinks off briefly (~0.28 s) about every 4.8 s.
-- **Status text and agent name**: hover over the lamp or the menu bar icon to see a tooltip with the label, the detail text (prefixed with `【agent】`), and the update time. The text is not drawn on the lamp itself.
-- **Time-of-day shadow**: direction, length and darkness of the ground shadow are computed from the Mac's local time:
-  - 20:00–05:30 night: short, faint shadow
-  - 05:30–07:00 early morning: long shadow to the left
-  - 07:00–11:00 morning: shadow moves from the left toward the base
-  - 11:00–13:00 noon: short shadow roughly underneath
-  - 13:00–17:00 afternoon: shadow swings right and grows longer
-  - 17:00–20:00 evening: shadow on the right, fading
+- macOS: `~/Library/Application Support/XiaomeiSignal/`
+- Linux: `~/.local/share/XiaomeiSignal/`
+- Windows: `%LOCALAPPDATA%\XiaomeiSignal\`
+- Override: `XIAOMEI_SIGNAL_DIR`
 
-  The white highlight on the lit lamp sits on the light-source side (opposite the shadow), and the housing's lit/shaded edges swap accordingly.
-- **Left-click** (a short click, not a drag): brings Grok Bot to the front (`open -a "Grok Bot"`), shows a macOS notification, and updates `current-task.md` and `user-ack.json`.
-- **Right-click**: opens the menu — 回到当前任务 (return to current task), 显示/隐藏 (show/hide), 复制状态 (copy status), 我已知晓 (acknowledge), 需支援 (need help), 退出 (quit). "Acknowledge" and "need help" write to `user-ack.json` (for an agent to read; the app itself doesn't read it).
-- If `status.json` can't be read, the lamp shows red "读不到状态" (can't read status). The app re-reads the status file every second.
-
-### Requirements
-
-- macOS (used on macOS 26, Apple Silicon)
-- Xcode Command Line Tools (for `swiftc` and `python3`): `xcode-select --install`
-- Grok Bot desktop app at `/Applications/Grok Bot.app` (the watcher matches the main process by this path)
-
-### Install
+### macOS
 
 ```bash
-git clone https://github.com/rw174655-ux/xiaomei-signal.git
-cd xiaomei-signal
-bash install.sh
+git clone https://github.com/rw174655-ux/xiaomei-signal.git && cd xiaomei-signal && bash install.sh
+bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" green|yellow|red "<text>" "<agent>"
 ```
 
-`install.sh`:
-
-1. compiles `XiaomeiSignal.swift` with `swiftc` into `~/Applications/小梅信号灯.app`
-2. copies `set-status`, `set-status.py` and `watch-grok-bot.sh` to `~/Library/Application Support/XiaomeiSignal/`
-3. renders `local.xiaomei.signal.watch.plist.template` (placeholder → your own path) into `~/Library/LaunchAgents/local.xiaomei.signal.watch.plist` and loads it
-
-Current user only; no sudo needed.
-
-### Usage: set the status
+### Linux
 
 ```bash
-bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" <green|yellow|red> "<text>" "<agent>"
+bash install-linux.sh
+xiaomei-set-status yellow "Waiting for you" "Xiaomei"
+xiaomei-show-status -w
+# optional: pip install --user pystray pillow && xiaomei-tray
 ```
 
-Examples:
+### Windows
 
-```bash
-bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" green  "Writing the README"      "Xiaomei"
-bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" yellow "Waiting for your OK"    "Xiaomei"
-bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" red    "Build failed"           "Xiaomei"
-```
-
-- Short forms also work: `g` / `y` / `wait` / `r` / `block`
-- The agent name is optional; when given, the detail is shown as `【agent】text`
-- The status is written to `~/Library/Application Support/XiaomeiSignal/status.json`; the lamp picks it up within a second
-
-Put this command in your Grok Bot instructions/memory so agents call it when they start, need you, or get stuck.
-
-### How the Grok Bot watcher works
-
-The LaunchAgent `local.xiaomei.signal.watch` (`RunAtLoad` + `KeepAlive`) keeps `watch-grok-bot.sh` running after login. Every 5 seconds it checks:
-
-- Grok Bot's **main process** is running (`/Applications/Grok Bot.app/Contents/MacOS/Grok Bot`, or a process named exactly `Grok Bot`) and the light isn't → open the light
-- Grok Bot's main process is gone and the light is still running → stop the light (`pkill`)
-
-So the light disappears within about 5 seconds after Grok Bot quits. Only the main process counts, not Helper processes (they can linger and would keep the light up). Note: if you choose 退出 (quit) from the menu while Grok Bot is running, the watcher reopens the light within 5 seconds; use 显示/隐藏 (show/hide) to tuck it away instead. The log is at `~/Library/Application Support/XiaomeiSignal/watch.log`.
-
-### Uninstall
-
-```bash
-bash uninstall.sh          # stop the watcher, remove the LaunchAgent and the app; keep the status folder
-bash uninstall.sh --purge  # also delete ~/Library/Application Support/XiaomeiSignal
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+& "$env:LOCALAPPDATA\XiaomeiSignal\set-status.cmd" yellow "Waiting" "Xiaomei"
+python "$env:LOCALAPPDATA\XiaomeiSignal\show-status.py" -w
 ```
 
 ### Author & license
