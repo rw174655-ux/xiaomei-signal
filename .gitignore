@@ -17,3 +17,8 @@ local.xiaomei.signal.watch.plist
 
 # macOS
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/

@@ -1,2 +1,17 @@
 #!/bin/bash
-exec python3 "$HOME/Library/Application Support/XiaomeiSignal/set-status.py" "$@"
+# Cross-platform wrapper: prefers sibling set-status.py, then installed support dirs.
+DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$DIR/set-status.py" ]; then
+  exec python3 "$DIR/set-status.py" "$@"
+fi
+# Installed locations
+for cand in \
+  "$HOME/Library/Application Support/XiaomeiSignal/set-status.py" \
+  "${XDG_DATA_HOME:-$HOME/.local/share}/XiaomeiSignal/set-status.py"
+do
+  if [ -f "$cand" ]; then
+    exec python3 "$cand" "$@"
+  fi
+done
+echo "set-status.py not found next to $0 or in support dir" >&2
+exit 1

@@ -1,5 +1,6 @@
 #!/bin/bash
 # Build 小梅信号灯 and install the Grok Bot watcher LaunchAgent (current user only).
+# macOS only — for Linux/Windows see install-linux.sh / install-windows.ps1.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -10,7 +11,9 @@ AGENT_DIR="$HOME/Library/LaunchAgents"
 PLIST="$AGENT_DIR/$LABEL.plist"
 
 if [ "$(uname -s)" != "Darwin" ]; then
-  echo "This app only runs on macOS." >&2
+  echo "This installer is for macOS (Swift desktop lamp)." >&2
+  echo "On Linux run:  bash install-linux.sh" >&2
+  echo "On Windows run: powershell -File install-windows.ps1" >&2
   exit 1
 fi
 if ! command -v swiftc >/dev/null 2>&1; then
@@ -31,7 +34,7 @@ swiftc -O -parse-as-library -framework Cocoa \
 
 echo "==> Installing scripts into: $SUPPORT_DIR"
 mkdir -p "$SUPPORT_DIR"
-for f in set-status set-status.py watch-grok-bot.sh; do
+for f in set-status set-status.py xiaomei_signal.py show-status.py tray.py watch-grok-bot.sh; do
   cp "$REPO_DIR/$f" "$SUPPORT_DIR/$f"
   chmod +x "$SUPPORT_DIR/$f"
 done
@@ -57,3 +60,4 @@ fi
 echo "==> Done."
 echo "The light appears while Grok Bot is running (checked every 5 seconds)."
 echo "Try: bash \"\$HOME/Library/Application Support/XiaomeiSignal/set-status\" yellow \"等你确认\" \"小梅\""
+echo "CLI watch: python3 \"\$HOME/Library/Application Support/XiaomeiSignal/show-status.py\" -w"
