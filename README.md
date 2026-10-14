@@ -1,6 +1,8 @@
 # 小梅信号灯 · XiaomeiSignal
 
-<p align="center"><img src="docs/screenshot.png" alt="小梅信号灯 screenshot (green lit)" width="160"></p>
+<p align="center">
+  <img src="docs/preview.gif" alt="小梅信号灯动图：绿黄红切换" width="280">
+</p>
 
 **中文** | [English](#english)
 
