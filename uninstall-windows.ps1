@@ -12,7 +12,9 @@ if ($Purge) {
         "set-status.py",
         "set-status.cmd",
         "show-status.py",
-        "tray.py"
+        "tray.py",
+        "desktop_light.py",
+        "xiaomei-light.cmd"
     ) | ForEach-Object {
         Remove-Item -Force (Join-Path $SupportDir $_) -ErrorAction SilentlyContinue
     }

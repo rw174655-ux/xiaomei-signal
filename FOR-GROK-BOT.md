@@ -14,8 +14,18 @@
 | yellow | 等用户（批准、填 Key、确认等） |
 | red | 卡住 |
 
+### 用法硬规则（助手必须遵守）
+
+这些规则写死，不要自己发明别的颜色含义：
+
+- **green**：推进中。只要你还在干活、不需要用户动手，**全程只能绿**。
+- **yellow**：仅当**真的在等用户**——批准、登录、填 Key、做选择、看图验收等。推进中**禁止**亮黄。
+- **red**：卡住（失败，或你自己解决不了）。
+- **禁止**：还在干活时报 yellow；用户已经回复、或你又开始干活了，要**立刻改回 green**。
+- 标错了就马上用 set-status 纠正，不要靠口头「记住」搪塞。
+
 - **macOS**：桌面像素灯 + 菜单栏图标（Swift App）。Grok Bot 在跑时灯会出现；退出后约 5 秒内关掉。
-- **Linux / Windows**：同一套 `status.json` + `set-status`；用终端 `show-status -w` 或可选系统托盘看状态。
+- **Linux / Windows**：同一套 `status.json` + `set-status`；**像素悬浮灯** `desktop_light.py`（pygame，效果对齐 macOS：影子随时间、可拖、置顶）；也可用终端 `show-status -w` 或可选托盘。
 
 **状态目录：**
 
@@ -82,6 +92,7 @@ bash uninstall.sh            # 保留状态目录
 ### 环境
 
 - `python3`（3.8+）
+- 像素悬浮灯：`sudo apt install python3-pygame`（或 `pip install pygame`）
 - 可选托盘：`python3 -m pip install --user pystray pillow`
 
 ### 你来装
@@ -92,6 +103,7 @@ rm -rf xiaomei-signal
 git clone https://github.com/rw174655-ux/xiaomei-signal.git
 cd xiaomei-signal
 bash install-linux.sh
+sudo apt install -y python3-pygame   # 桌面灯依赖
 ```
 
 确保 `~/.local/bin` 在 PATH 里（没有就 `export PATH="$HOME/.local/bin:$PATH"`）。
@@ -100,9 +112,11 @@ bash install-linux.sh
 
 ```bash
 xiaomei-set-status yellow "安装完成，等你看一眼" "小梅"
+xiaomei-light &                      # 像素悬浮灯（应对齐黄灯）
 xiaomei-show-status
+xiaomei-set-status green "推进中" "小梅"
 # 持续监视：
-xiaomei-show-status -w
+# xiaomei-show-status -w
 # 可选托盘：
 # python3 -m pip install --user pystray pillow && xiaomei-tray
 ```
@@ -111,6 +125,7 @@ xiaomei-show-status -w
 
 ```bash
 bash "$HOME/.local/share/XiaomeiSignal/set-status" green "推进中" "小梅"
+python3 "$HOME/.local/share/XiaomeiSignal/desktop_light.py"
 python3 "$HOME/.local/share/XiaomeiSignal/show-status.py"
 ```
 
@@ -128,6 +143,7 @@ bash uninstall-linux.sh
 ### 环境
 
 - Python 3（已加入 PATH）
+- 像素悬浮灯：`python -m pip install --user pygame`
 - 可选托盘：`python -m pip install --user pystray pillow`
 
 ### 你来装（PowerShell）
@@ -138,6 +154,7 @@ if (Test-Path xiaomei-signal) { Remove-Item -Recurse -Force xiaomei-signal }
 git clone https://github.com/rw174655-ux/xiaomei-signal.git
 cd xiaomei-signal
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+python -m pip install --user pygame
 ```
 
 测一下：
@@ -145,10 +162,13 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 ```powershell
 $dir = "$env:LOCALAPPDATA\XiaomeiSignal"
 & "$dir\set-status.cmd" yellow "安装完成，等你看一眼" "小梅"
+python "$dir\desktop_light.py"   # 像素悬浮灯
 python "$dir\show-status.py"
 & "$dir\set-status.cmd" green "推进中" "小梅"
 python "$dir\show-status.py" -w
 ```
+
+> 若在无 GUI 的远程环境，至少装好 CLI；悬浮灯请用户在本机桌面跑 `desktop_light.py` / `xiaomei-light.cmd`。
 
 ### 卸载
 
@@ -205,16 +225,16 @@ python3 set-status.py green|yellow|red "<说明>" "<agent名>"
 
 ## 装完后请告诉用户
 
-用一两句话说明：已按哪一平台安装、怎么看状态（macOS 看桌面灯；Linux/Windows 看终端 `show-status -w` 或托盘）、需要你时会变黄。仓库链接：https://github.com/rw174655-ux/xiaomei-signal
+用一两句话说明：已按哪一平台安装、怎么看状态（三平台都可看桌面像素灯；Linux/Windows 另有 `show-status -w` / 托盘）、需要你时会变黄。仓库链接：https://github.com/rw174655-ux/xiaomei-signal
 
 ---
 
 ## English (short)
 
-| Platform | Install | Set status |
-|----------|---------|------------|
-| macOS | `bash install.sh` | `bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" green\|yellow\|red "<text>" "<agent>"` |
-| Linux | `bash install-linux.sh` | `xiaomei-set-status green\|yellow\|red "<text>" "<agent>"` |
-| Windows | `install-windows.ps1` | `& "$env:LOCALAPPDATA\XiaomeiSignal\set-status.cmd" ...` |
+| Platform | Install | Desktop light | Set status |
+|----------|---------|---------------|------------|
+| macOS | `bash install.sh` | Swift app (auto) | `bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" green\|yellow\|red "<text>" "<agent>"` |
+| Linux | `bash install-linux.sh` + `python3-pygame` | `xiaomei-light` | `xiaomei-set-status green\|yellow\|red "<text>" "<agent>"` |
+| Windows | `install-windows.ps1` + `pip install pygame` | `python desktop_light.py` | `& "$env:LOCALAPPDATA\XiaomeiSignal\set-status.cmd" ...` |
 
 green = working, yellow = waiting for the user, red = blocked. MIT · Mayrian · https://github.com/rw174655-ux/xiaomei-signal

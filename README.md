@@ -4,7 +4,7 @@
 
 **中文** | [English](#english)
 
-为 Grok Bot 做的跨平台状态信号：`green` / `yellow` / `red`。macOS 有像素风桌面灯 + 菜单栏图标；**Linux / Windows 提供同一套 `status.json` + `set-status` CLI**，以及终端监视与可选系统托盘。
+为 Grok Bot 做的跨平台状态信号：`green` / `yellow` / `red`。**三平台都有像素风桌面悬浮灯**（macOS 为 Swift App；Linux / Windows 为 Python + pygame，共用同一套 `status.json` + `set-status`）。另有终端监视与可选系统托盘。
 
 AI 助手干活时用一条命令把灯切到 绿 / 黄 / 红，你瞄一眼就知道它是在推进、在等你，还是卡住了。
 
@@ -75,12 +75,21 @@ bash uninstall.sh --purge  # 连状态目录一起删
 
 ---
 
-## Linux（CLI + 可选托盘）
+## Linux（像素悬浮灯 + CLI）
+
+<p align="center"><img src="docs/linux-desktop-light-strip.png" alt="Linux desktop light green/yellow/red" width="420"></p>
+
+### 功能
+
+- **像素悬浮灯**（`desktop_light.py` / `xiaomei-light`）：无边框、置顶、可拖动；影子随本机时间变方向；亮灯约每 4.8 秒闪灭一次；尽量不占任务栏（`SKIP_TASKBAR` + utility 窗口类型，视桌面环境而定）。
+- 与 macOS 共用同一套 `status.json` / `set-status` 语义。
+- 终端监视 `show-status -w`；可选系统托盘 `tray.py`。
 
 ### 环境要求
 
 - Python 3.8+
-- （可选托盘）`pip install --user pystray pillow`，以及系统托盘 / AppIndicator 支持
+- 桌面灯：`pygame`（推荐 `sudo apt install python3-pygame`，或 `pip install pygame`）
+- （可选托盘）`pip install --user pystray pillow`
 
 ### 安装
 
@@ -88,39 +97,44 @@ bash uninstall.sh --purge  # 连状态目录一起删
 git clone https://github.com/rw174655-ux/xiaomei-signal.git
 cd xiaomei-signal
 bash install-linux.sh
+sudo apt install python3-pygame   # 若尚未安装
 ```
 
-会把脚本装到 `~/.local/share/XiaomeiSignal/`，并在 `~/.local/bin/` 建符号链接：`xiaomei-set-status`、`xiaomei-show-status`、`xiaomei-tray`。
+会把脚本装到 `~/.local/share/XiaomeiSignal/`，并在 `~/.local/bin/` 建符号链接：`xiaomei-set-status`、`xiaomei-show-status`、`xiaomei-light`、`xiaomei-tray`。
 
 ### 使用
 
 ```bash
-# 切换状态（PATH 已含 ~/.local/bin 时）
+# 开像素悬浮灯
+xiaomei-light
+# 或：python3 ~/.local/share/XiaomeiSignal/desktop_light.py
+
+# 切换状态
 xiaomei-set-status green  "正在改代码" "开发"
 xiaomei-set-status yellow "等你确认"   "开发"
 xiaomei-set-status red    "测试失败"   "开发"
 
-# 或直接
-bash "$HOME/.local/share/XiaomeiSignal/set-status" yellow "等你" "小梅"
-python3 "$HOME/.local/share/XiaomeiSignal/set-status.py" green "推进中" "小梅"
-
-# 终端监视（状态变化时打印一行）
+# 终端监视
 xiaomei-show-status -w
 
-# 可选：系统托盘
+# 可选托盘
 python3 -m pip install --user pystray pillow
 xiaomei-tray
 ```
+
+快捷键：悬浮灯窗口内按 `Esc` / `q` 退出；按住左键拖动。
 
 ### 怎么测
 
 ```bash
 bash install-linux.sh
 xiaomei-set-status yellow "安装完成，等你看一眼" "小梅"
-xiaomei-show-status          # 应看到 yellow
-cat ~/.local/share/XiaomeiSignal/status.json
+xiaomei-light &          # 应看到黄灯
 xiaomei-set-status green "推进中" "小梅"
+xiaomei-set-status red "卡住" "小梅"
 ```
+
+验收截图见 `docs/linux-desktop-light-{green,yellow,red}.png` 与 `docs/linux-desktop-light-strip.png`。
 
 ### 卸载
 
@@ -131,11 +145,18 @@ bash uninstall-linux.sh --purge  # 删除整个数据目录
 
 ---
 
-## Windows（CLI + 可选托盘）
+## Windows（像素悬浮灯 + CLI）
+## Windows（像素悬浮灯 + CLI）
+
+### 功能
+
+- **像素悬浮灯**（与 Linux 同一份 `desktop_light.py`）：无边框、always-on-top、可拖动、影子随时间、绿/黄/红闪烁；不抢焦点（`SWP_NOACTIVATE`）。
+- 同一套 `status.json` / `set-status`；终端监视；可选托盘。
 
 ### 环境要求
 
 - Python 3.8+（安装时勾选 Add to PATH）
+- 桌面灯：`python -m pip install --user pygame`
 - （可选托盘）`python -m pip install --user pystray pillow`
 
 ### 安装
@@ -146,6 +167,7 @@ bash uninstall-linux.sh --purge  # 删除整个数据目录
 git clone https://github.com/rw174655-ux/xiaomei-signal.git
 cd xiaomei-signal
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+python -m pip install --user pygame
 ```
 
 脚本复制到 `%LOCALAPPDATA%\XiaomeiSignal\`。
@@ -154,6 +176,10 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 
 ```powershell
 $dir = "$env:LOCALAPPDATA\XiaomeiSignal"
+# 开像素悬浮灯
+python "$dir\desktop_light.py"
+# 或：& "$dir\xiaomei-light.cmd"
+
 & "$dir\set-status.cmd" yellow "等你确认" "小梅"
 python "$dir\set-status.py" green "推进中" "小梅"
 python "$dir\show-status.py" -w
@@ -167,14 +193,16 @@ python "$dir\tray.py"
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+python -m pip install --user pygame
 $dir = "$env:LOCALAPPDATA\XiaomeiSignal"
 & "$dir\set-status.cmd" yellow "安装完成" "小梅"
-python "$dir\show-status.py"
-Get-Content "$dir\status.json"
+python "$dir\desktop_light.py"
+# 另开窗口切状态，灯应跟着变
 & "$dir\set-status.cmd" green "推进中" "小梅"
+& "$dir\set-status.cmd" red "卡住" "小梅"
 ```
 
-> 本仓库的 CI / 云端 Linux 环境无法打开真实 Windows GUI；Windows 托盘需在本机验证。CLI（`set-status.py` / `show-status.py`）与 macOS/Linux 共用同一 Python 逻辑，语义一致。
+> 云端 Linux CI 无法打开真实 Windows GUI；Windows 悬浮灯 / 托盘请在本机验证。绘制与状态协议与 Linux 共用同一 Python 实现。
 
 ### 卸载
 
@@ -193,9 +221,11 @@ powershell -ExecutionPolicy Bypass -File .\uninstall-windows.ps1 --purge
 ```bash
 python3 set-status.py green "试一下" "小梅"
 python3 show-status.py -w
+# Linux/Windows 像素灯（需 pygame）
+python3 desktop_light.py
 ```
 
-Windows 把 `python3` 换成 `python` 即可。
+Windows 把 `python3` 换成 `python` 即可。macOS 桌面灯仍请用 `bash install.sh` 编译 Swift App。
 
 ---
 
@@ -209,7 +239,7 @@ Windows 把 `python3` 换成 `python` 即可。
 
 ## English
 
-Cross-platform status signal for Grok Bot: `green` / `yellow` / `red`. **macOS** ships a pixel desktop lamp + menu bar icon; **Linux / Windows** share the same `status.json` + `set-status` CLI, plus a terminal watcher and an optional system tray.
+Cross-platform status signal for Grok Bot: `green` / `yellow` / `red`. **All three platforms** ship a pixel floating desktop light (macOS: Swift; Linux/Windows: Python + pygame) on the same `status.json` + `set-status` protocol, plus a terminal watcher and optional system tray.
 
 ### Shared protocol
 
@@ -231,6 +261,8 @@ bash "$HOME/Library/Application Support/XiaomeiSignal/set-status" green|yellow|r
 
 ```bash
 bash install-linux.sh
+sudo apt install python3-pygame   # desktop light
+xiaomei-light
 xiaomei-set-status yellow "Waiting for you" "Xiaomei"
 xiaomei-show-status -w
 # optional: pip install --user pystray pillow && xiaomei-tray
@@ -240,6 +272,8 @@ xiaomei-show-status -w
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
+python -m pip install --user pygame
+python "$env:LOCALAPPDATA\XiaomeiSignal\desktop_light.py"
 & "$env:LOCALAPPDATA\XiaomeiSignal\set-status.cmd" yellow "Waiting" "Xiaomei"
 python "$env:LOCALAPPDATA\XiaomeiSignal\show-status.py" -w
 ```

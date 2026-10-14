@@ -4,7 +4,7 @@ SUPPORT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/XiaomeiSignal"
 BIN_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
 
 echo "==> Removing symlinks"
-rm -f "$BIN_DIR/xiaomei-set-status" "$BIN_DIR/xiaomei-show-status" "$BIN_DIR/xiaomei-tray"
+rm -f "$BIN_DIR/xiaomei-set-status" "$BIN_DIR/xiaomei-show-status" "$BIN_DIR/xiaomei-tray" "$BIN_DIR/xiaomei-light"
 
 if [ "${1:-}" = "--purge" ]; then
   echo "==> Removing $SUPPORT_DIR"
@@ -15,7 +15,8 @@ else
         "$SUPPORT_DIR"/set-status.py \
         "$SUPPORT_DIR"/set-status \
         "$SUPPORT_DIR"/show-status.py \
-        "$SUPPORT_DIR"/tray.py
+        "$SUPPORT_DIR"/tray.py \
+        "$SUPPORT_DIR"/desktop_light.py
   echo "Kept $SUPPORT_DIR (run with --purge to delete it)."
 fi
 echo "==> Done."
